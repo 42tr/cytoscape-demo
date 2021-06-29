@@ -12,3 +12,5 @@
 2. [element-plus](https://element-plus.gitee.io/#/en-US)
 3. [axios](https://github.com/axios/axios)
 4. [cytoscape](https://js.cytoscape.org/)
+
+![screenshot](https://github.com/KsClouds/cytoscape-demo/blob/main/screenshot.jpg)
