@@ -1,0 +1,215 @@
+<html>
+<head>
+  <title>cytoscape demo</title>
+  <meta name="viewport" content="width=device-width, user-scalable=no, initial-scale=1, maximum-scale=1">
+  <!-- <script src="https://unpkg.com/cytoscape/dist/cytoscape.min.js"></script> -->
+  <script src="cytoscape.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+  <script src="https://unpkg.com/vue@next"></script>
+  <link rel="stylesheet" href="https://unpkg.com/element-plus/lib/theme-chalk/index.css">
+  <script src="https://unpkg.com/element-plus/lib/index.full.js"></script>
+
+  <style>
+    body {
+      font-family: helvetica neue, helvetica, liberation sans, arial, sans-serif;
+      font-size: 14px
+    }
+    #cy {
+      position: absolute;
+      left: 200;
+      top: 0;
+      bottom: 0;
+      right: 0;
+      z-index: 1;
+    }
+    h1 {
+      opacity: 0.5;
+      font-size: 1em;
+      font-weight: bold;
+    }
+  </style>
+</head>
+
+<body>
+  <div id='app'>
+    <el-container>
+      <el-aside width="200px" style="z-index:100">
+        <el-menu :default-openeds="['1']">
+          <el-submenu index="1">
+            <template #title><i class="el-icon-message"></i>Navigator One</template>
+            <el-menu-item-group>
+              <template #title>Group 1</template>
+              <el-menu-item index="1-1" @click='click(1, "模块1")'>模块 1</el-menu-item>
+              <el-menu-item index="1-2" @click='click(2, "模块2")'>模块 2</el-menu-item>
+            </el-menu-item-group>
+            <el-menu-item-group title="Group 2">
+              <el-menu-item index="1-3" @click='click(3, "模块3")'>模块 3</el-menu-item>
+            </el-menu-item-group>
+            <el-submenu index="1-4">
+              <template #title>Option4</template>
+              <el-menu-item index="1-4-1" @click='click(4, "模块4")'>模块 4</el-menu-item>
+            </el-submenu>
+          </el-submenu>
+          </el-menu>
+      </el-aside>
+      <el-container>
+        <el-main>
+          <h1>cytoscape demo</h1>
+          <div id="cy"></div>
+        </el-main>
+      </el-container>
+    </el-container>
+
+    <el-drawer
+      title="parameter config page"
+      v-model="drawer"
+      direction="rtl">
+      <span>Hi, kisia!</span>
+    </el-drawer>
+  </div>
+  
+
+  <script>
+    var App = {
+      data() {
+        return {
+          id: 0,
+          name: "",
+          drawer: false
+        }
+      },
+      methods: {
+        click(id, name) {
+          this.id = id
+          this.name = name
+        }
+      },
+      created() {
+        chosedId = null
+
+        _this = this
+        document.addEventListener('DOMContentLoaded', function () {
+          var cy = window.cy = cytoscape({
+            container: document.getElementById('cy'),
+            style: [{
+              selector: "core",
+              style: {
+                'selection-box-color': '#AAD8FF',
+                'selection-box-border-color': '#8BB0D0',
+                'selection-box-opacity': '0.5'
+              }
+            },
+            {
+              selector: 'node',
+              style: {
+                'content': 'data(name)',
+                "font-size": "12px",
+                "text-valign": "center",
+                "text-halign": "center",
+                "background-color": "#555",
+                "text-outline-color": "#555",
+                "text-outline-width": "2px",
+                "color": "#fff",
+                "overlay-padding": "6px",
+                "z-index": "10"
+              }
+            },
+            {
+              selector: 'node:selected',
+              style: {
+                "border-width": "6px",
+                "border-color": "#AAD8FF",
+                "border-opacity": "0.5",
+                "background-color": "#77828C",
+                "text-outline-color": "#77828C"
+              }
+            },
+            {
+              selector: 'edge',
+              style: {
+                'curve-style': 'bezier',
+                'target-arrow-shape': 'triangle'
+              }
+            }],
+            elements: {
+              nodes: [
+                { data: { id: 'a', name: '测试模块' }, position: {x:300, y:100} },
+                { data: { id: 'b', name: '测试模块' }, position: {x:300, y:200} },
+                { data: { id: 'c', name: '测试模块' }, position: {x:400, y:200} }
+              ],
+              edges: [
+                { data: { id: 'ab', source: 'a', target: 'b' } },
+                { data: { id: 'ac', source: 'a', target: 'c' } }
+              ]
+            },
+            layout: {
+                name: 'preset'
+            },
+            minZoom: 0.5,
+            maxZoom: 5
+          });
+          cy.zoom({
+            level: 1.0, // the zoom level
+            renderedPosition: { x: 100, y: 100 }
+          });
+          i = 0
+          cy.on('click', (e) => {
+            if (e.target.length == null) {
+              return
+            }
+            chosedId = e.target.data().id
+            if (e.target.group() === 'nodes'
+              && cy.$('node:selected').size() > 0
+              && cy.$id(cy.$('node:selected').data().id + e.target.data().id).data() == null) {
+                if (cy.$('node:selected').data().id == e.target.data().id) {
+                  // _this.$message.info('打开配置页')//TODO
+                  _this.drawer = true
+                } else {
+                  cy.add({
+                    group: 'edges',
+                    data: {
+                      id: cy.$('node:selected').data().id + e.target.data().id,
+                      source: cy.$('node:selected').data().id,
+                      target: e.target.data().id,
+                    }
+                  })
+                }
+            }
+          })
+          cy.on('cxttapend', (e) => {
+            if (_this.name == '') {
+              _this.$message.error('请先选择模块')
+            } else {
+              cy.add({
+                group: 'nodes',
+                data: {id: _this.id + "" + i + "", name: _this.name},
+                position: e.position
+              })
+              i++
+            }
+          })
+        });
+        document.onkeydown = (e) => {
+          var e = e || window.event;
+          if (e.keyCode === 8 && chosedId != null) {// 删除
+            window.cy.remove(window.cy.$id(chosedId))
+          } else if (e.keyCode === 13) {
+            var nodes = window.cy.$('node')
+            for (var i = 0; i < nodes.length; i++) {
+              console.log(nodes[i].data(), nodes[i].position())
+            }
+            var edges = window.cy.$('edge')
+            for (var i = 0; i < edges.length; i++) {
+              console.log(edges[i].data())
+            }
+          }
+        }
+      }
+    }
+    var app = Vue.createApp(App)
+    app.use(ElementPlus)
+    app.mount('#app')
+  </script>
+</body>
+
+</html>
