@@ -1,0 +1,46 @@
+name: Go
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+
+  build:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v2
+
+    - name: Build
+      run: tar -zcvf cytoscape-demo.tar.gz cytoscape-demo
+
+    - name: copy file via ssh password
+      uses: appleboy/scp-action@master
+      with:
+        host: ${{secrets.HOST}}
+        username: root
+        password: ${{ secrets.SSH_PWD }}
+        port: 22
+        source: "cytoscape-demo.tar.gz"
+        target: "/root"
+        
+  deploy:
+    runs-on: ubuntu-latest
+    needs: build
+    steps:
+    - name: multiple command
+      uses: appleboy/ssh-action@master
+      with:
+        host: ${{secrets.HOST}}
+        username: root
+        password: ${{ secrets.SSH_PWD }}
+        port: 22
+        script: |
+          mkdir /luckystar
+          cd /luckystar
+          rm -rf ./cytoscape-demo.tar.gz
+          rm -rf cytoscape-demo
+          mv /root/cytoscape-demo.tar.gz ./
+          tar -zxvf cytoscape-demo.tar.gz
